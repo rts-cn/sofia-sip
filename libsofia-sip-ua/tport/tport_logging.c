@@ -45,7 +45,7 @@
 #include <errno.h>
 #include <limits.h>
 
-#define TPORT_STAMP_SIZE 144
+#define TPORT_STAMP_SIZE 200
 
 /**@var TPORT_LOG
  *
@@ -324,8 +324,10 @@ void tport_stamp(tport_t const *self, msg_t *msg,
   char label[24] = "";
   char *comp = "";
   char name[SU_ADDRSIZE] = "";
+  char fromto[106] = "";
   su_sockaddr_t const *su;
-  unsigned short second, minute, hour;
+  tport_t const *local = self;
+  unsigned short second, minute, hour, day = 1, month = 1, year = 1900;
   /* should check for ifdef HAVE_LOCALTIME_R instead -_- */
 #if defined(HAVE_GETTIMEOFDAY) || defined(HAVE_CLOCK_MONOTONIC)
   struct tm nowtm = { 0 };
@@ -339,6 +341,9 @@ void tport_stamp(tport_t const *self, msg_t *msg,
   second = nowtm.tm_sec;
   minute = nowtm.tm_min;
   hour = nowtm.tm_hour;
+  day = nowtm.tm_mday;
+  month = nowtm.tm_mon + 1;
+  year = nowtm.tm_year + 1900;
 #else
   second = (unsigned short)(now.tv_sec % 60);
   minute = (unsigned short)((now.tv_sec / 60) % 60);
@@ -359,10 +364,24 @@ void tport_stamp(tport_t const *self, msg_t *msg,
 
   su_inet_ntop(su->su_family, SU_ADDR(su), name, sizeof(name));
 
+  if (self->tp_pri) {
+    local = self->tp_pri->pri_primary;
+  }
+
+  if (strcmp(what, "recv") == 0) {
+    snprintf(fromto, sizeof(fromto), "from %s/[%s]:%u%s%s to %s/[%s]:%s",
+      self->tp_name->tpn_proto, name, ntohs(su->su_port), label[0] ? label : "", comp,
+      local->tp_protoname, local->tp_canon, local->tp_port);
+  } else {
+    snprintf(fromto, sizeof(fromto), "from %s/[%s]:%s to %s/[%s]:%u%s%s",
+      local->tp_protoname, local->tp_canon, local->tp_port,
+      self->tp_name->tpn_proto, name, ntohs(su->su_port), label[0] ? label : "", comp);
+  }
+
   snprintf(stamp, TPORT_STAMP_SIZE,
-	   "%s "MOD_ZU" bytes %s %s/[%s]:%u%s%s at %02u:%02u:%02u.%06lu:\n",
-	   what, (size_t)n, via, self->tp_name->tpn_proto,
-	   name, ntohs(su->su_port), label[0] ? label : "", comp,
+	   "%s "MOD_ZU" bytes %s at %04u-%02u-%02u %02u:%02u:%02u.%06lu:\n",
+	   what, (size_t)n, fromto,
+	   year, month, day,
 	   hour, minute, second, now.tv_usec);
 }
 
