@@ -627,6 +627,7 @@ int nua_server_respond(nua_server_request_t *sr, tagi_t const *tags)
   if (next.msg)
     msg_destroy(next.msg);
 
+if (sr->sr_status < 1240) // special feature do-not-respond-anything
   SR_STATUS1(sr, SIP_500_INTERNAL_SERVER_ERROR);
 
   msg_destroy(msg);

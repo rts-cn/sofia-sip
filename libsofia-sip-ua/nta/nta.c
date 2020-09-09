@@ -6624,6 +6624,12 @@ int nta_incoming_treply(nta_incoming_t *irq,
 {
   int retval = -1;
 
+  if (irq && status == 1240) {
+      incoming_reset_timer(irq);
+      irq->irq_status = 1240;
+      return 0;
+  }
+
   if (irq &&
       (irq->irq_status < 200 || status < 200 ||
        (irq->irq_method == sip_method_invite && status < 300))) {
