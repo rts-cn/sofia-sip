@@ -144,6 +144,8 @@ typedef enum
   sdp_bw_ct,				/**< Conference total */
   sdp_bw_as,				/**< Application-specific */
   sdp_bw_tias,				/**< Application-specific */
+  sdp_bw_rr,
+  sdp_bw_rs,
 } sdp_bandwidth_e;
 
 /** Session or media bandwidth. */
