@@ -45,7 +45,7 @@
 #include <errno.h>
 #include <limits.h>
 
-#define TPORT_STAMP_SIZE 163
+#define TPORT_STAMP_SIZE 200
 
 /**@var TPORT_LOG
  *
@@ -326,6 +326,7 @@ void tport_stamp(tport_t const *self, msg_t *msg,
   char name[SU_ADDRSIZE] = "";
   char fromto[106] = "";
   su_sockaddr_t const *su;
+  tport_t const *local = self;
   unsigned short second, minute, hour, day = 1, month = 1, year = 1900;
   /* should check for ifdef HAVE_LOCALTIME_R instead -_- */
 #if defined(HAVE_GETTIMEOFDAY) || defined(HAVE_CLOCK_MONOTONIC)
@@ -363,14 +364,18 @@ void tport_stamp(tport_t const *self, msg_t *msg,
 
   su_inet_ntop(su->su_family, SU_ADDR(su), name, sizeof(name));
 
+  if (self->tp_pri) {
+    local = self->tp_pri->pri_primary;
+  }
+
   if (strcmp(what, "recv") == 0) {
-	snprintf(fromto, sizeof(fromto), "from %s/[%s]:%u%s%s to %s/[%s]:%s",
-		self->tp_name->tpn_proto, name, ntohs(su->su_port), label[0] ? label : "", comp,
-		self->tp_protoname, self->tp_canon, self->tp_port);
+    snprintf(fromto, sizeof(fromto), "from %s/[%s]:%u%s%s to %s/[%s]:%s",
+      self->tp_name->tpn_proto, name, ntohs(su->su_port), label[0] ? label : "", comp,
+      local->tp_protoname, local->tp_canon, local->tp_port);
   } else {
-	snprintf(fromto, sizeof(fromto), "from %s/[%s]:%s to %s/[%s]:%u%s%s",
-		self->tp_protoname, self->tp_canon, self->tp_port,
-		self->tp_name->tpn_proto, name, ntohs(su->su_port), label[0] ? label : "", comp);
+    snprintf(fromto, sizeof(fromto), "from %s/[%s]:%s to %s/[%s]:%u%s%s",
+      local->tp_protoname, local->tp_canon, local->tp_port,
+      self->tp_name->tpn_proto, name, ntohs(su->su_port), label[0] ? label : "", comp);
   }
 
   snprintf(stamp, TPORT_STAMP_SIZE,
