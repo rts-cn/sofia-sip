@@ -851,6 +851,7 @@ void tport_log_msg(tport_t *self, msg_t *msg,
   size_t buffer_pos = 0;
   size_t bytes_written = 0;
   char *call_id = NULL;
+  size_t call_id_len = 0;
 
 #define MSG_SEPARATOR \
   "------------------------------------------------------------------------\n"
@@ -899,8 +900,8 @@ void tport_log_msg(tport_t *self, msg_t *msg,
         if (s[8] == ' ') {
           header = 9;
         }
-        call_id = malloc(n);
-        snprintf(call_id, n, "%.*s", (int)n - header, s + header);
+        call_id = s + header;
+        call_id_len = n - header;
       }
 
       s += n;
@@ -927,12 +928,14 @@ void tport_log_msg(tport_t *self, msg_t *msg,
   }
 
   if (call_id) {
-    bytes_written = snprintf(buffer + buffer_pos, buffer_size - buffer_pos, "call-id=%.*s",
-                          (int)strlen(call_id), call_id);
+    if (buffer_pos > 0 && buffer[buffer_pos - 1] != '\n') {
+      buffer[buffer_pos++] = '\n';
+    }
+    bytes_written = snprintf(buffer + buffer_pos, buffer_size - buffer_pos, "call-id=%.*s\n",
+                          (int)call_id_len, call_id);
     if (bytes_written > 0) {
       buffer_pos += bytes_written;
     }
-    free(call_id);
   }
 
   if (buffer_pos >= buffer_size) {
